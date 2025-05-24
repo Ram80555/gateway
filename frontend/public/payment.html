@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>QR Payment</title>
+</head>
+<body>
+  <h1>Scan to Pay</h1>
+  <img id="qrImage" src="" alt="QR Code" />
+  <script>
+    // Simulate QR load (for live: replace this logic with actual dynamic QR)
+    const params = new URLSearchParams(window.location.search);
+    const base64QR = params.get('qr'); // Expect ?qr=base64encodedstring
+    if (base64QR) {
+      document.getElementById('qrImage').src = 'data:image/png;base64,' + base64QR;
+    }
+  </script>
+</body>
+</html>

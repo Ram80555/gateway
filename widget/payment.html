@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>UPI Payment</title>
+</head>
+<body>
+  <h1>UPI Payment</h1>
+
+  <input type="text" id="amount" placeholder="Enter amount" />
+  <button onclick="generateQR()">Generate QR</button>
+
+  <div>
+    <p>QR Code</p>
+    <img id="qrCode" src="" alt="QR Code" />
+  </div>
+
+  <div>
+    <p>Upload Payment Proof:</p>
+    <input type="file" id="proof" />
+    <br />
+    <input type="text" id="utr" placeholder="Enter UTR (optional)" />
+    <br />
+    <button onclick="uploadProof()">Upload Proof</button>
+  </div>
+
+  <script>
+    async function generateQR() {
+      const amount = document.getElementById("amount").value;
+      
+      // Replace with your actual static UPI ID or make it dynamic
+      const upi = "your-upi-id@bank"; 
+
+      if (!upi || !amount) {
+        alert("UPI ID and amount are required");
+        return;
+      }
+
+      try {
+        const res = await fetch(`/generate-qr?upi=${encodeURIComponent(upi)}&amount=${encodeURIComponent(amount)}`);
+        const data = await res.json();
+        document.getElementById("qrCode").src = data.qr;
+      } catch (err) {
+        alert("Error generating QR: " + err.message);
+      }
+    }
+
+    async function uploadProof() {
+      const fileInput = document.getElementById("proof");
+      const utr = document.getElementById("utr").value;
+      const amount = document.getElementById("amount").value;
+
+      const formData = new FormData();
+      formData.append("proof", fileInput.files[0]);
+      formData.append("utr", utr);
+      formData.append("amount", amount);
+
+      try {
+        const res = await fetch("/submit-payment", {
+          method: "POST",
+          body: formData,
+        });
+        const data = await res.json();
+        alert(data.message || "Uploaded!");
+      } catch (err) {
+        alert("Upload failed: " + err.message);
+      }
+    }
+  </script>
+</body>
+</html>

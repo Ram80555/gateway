@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Panel</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+    th { background-color: #f4f4f4; }
+    img { max-width: 100px; }
+    button { padding: 6px 12px; margin: 2px; }
+  </style>
+</head>
+<body>
+  <h1>Admin Panel</h1>
+  <table id="paymentsTable">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Amount</th>
+        <th>UPI</th>
+        <th>UTR</th>
+        <th>Proof</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    async function loadPayments() {
+      const res = await fetch('/api/admin/payments');
+      const data = await res.json();
+      const tbody = document.querySelector("#paymentsTable tbody");
+      tbody.innerHTML = "";
+      data.forEach(p => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${p.name}</td>
+          <td>${p.amount}</td>
+          <td>${p.upi}</td>
+          <td>${p.utr || "-"}</td>
+          <td>${p.proof ? `<img src="/${p.proof}" />` : "No proof"}</td>
+          <td>${p.status}</td>
+          <td>
+            <button onclick="updateStatus('${p._id}', 'approved')">Approve</button>
+            <button onclick="updateStatus('${p._id}', 'rejected')">Reject</button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function updateStatus(id, status) {
+      await fetch("/api/admin/update-status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status }),
+      });
+      loadPayments();
+    }
+
+    loadPayments();
+  </script>
+</body>
+</html>

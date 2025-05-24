@@ -22,7 +22,7 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../widget/index.html'));
 });
 app.get('/payments', (req, res) => {
-  res.sendFile(path.join(__dirname, '../widget/payments.html'));
+  res.sendFile(path.join(__dirname, '../widget/payment.html'));
 });
 // Endpoint to get UPI ID
 app.get('/get-upi-id', (req, res) => {

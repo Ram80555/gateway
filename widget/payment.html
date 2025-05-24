@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Complete Payment</title>
+  <style>
+    body { font-family: Arial; padding: 20px; max-width: 500px; margin: auto; }
+    input, button { width: 100%; padding: 10px; margin: 10px 0; }
+    img { width: 100%; max-width: 300px; display: block; margin: auto; }
+    #status, #timer { font-weight: bold; text-align: center; margin-top: 15px; }
+  </style>
+</head>
+<body>
+  <h2>Make Your Payment</h2>
+  <div id="qr-container"></div>
+  <div id="timer"></div>
+
+  <input type="text" id="utr" placeholder="Enter UTR" required />
+  <input type="file" id="proof" accept="image/*" />
+  <button onclick="submitProof()">Submit Payment Proof</button>
+
+  <div id="status"></div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const amount = params.get("amount");
+    let paymentId = null;
+
+    async function loadQR() {
+      const res = await fetch('/api/admin/bank-details');
+      const data = await res.json();
+      const upiId = data.upiId || "invalid@upi";
+
+      const upiUrl = \`upi://pay?pa=\${upiId}&pn=Merchant&am=\${amount}&cu=INR\`;
+      const qrSrc = \`https://chart.googleapis.com/chart?cht=qr&chs=300x300&chl=\${encodeURIComponent(upiUrl)}\`;
+
+      document.getElementById("qr-container").innerHTML = `<img src="\${qrSrc}" alt="UPI QR Code">`;
+
+      // Initiate payment in backend
+      const r = await fetch('/api/payments/initiate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount, upi: upiId })
+      });
+      const resp = await r.json();
+      paymentId = resp._id;
+
+      startCountdown();
+      startPolling();
+    }
+
+    function startCountdown() {
+      let time = 600;
+      const timer = document.getElementById("timer");
+      const interval = setInterval(() => {
+        const min = Math.floor(time / 60);
+        const sec = time % 60;
+        timer.textContent = \`Time remaining: \${min}:\${sec.toString().padStart(2, '0')}\`;
+        time--;
+        if (time < 0) {
+          clearInterval(interval);
+          timer.textContent = "Time expired!";
+        }
+      }, 1000);
+    }
+
+    async function submitProof() {
+      const file = document.getElementById("proof").files[0];
+      const utr = document.getElementById("utr").value;
+      if (!file || !utr || !paymentId) return alert("Please fill all fields");
+
+      const formData = new FormData();
+      formData.append("paymentId", paymentId);
+      formData.append("utr", utr);
+      formData.append("proof", file);
+
+      const res = await fetch("/api/payments/upload-proof", {
+        method: "POST",
+        body: formData
+      });
+
+      const data = await res.json();
+      document.getElementById("status").textContent = data.message || "Submitted.";
+    }
+
+    async function startPolling() {
+      const statusEl = document.getElementById("status");
+      const poll = setInterval(async () => {
+        const res = await fetch(\`/api/payments/status/\${paymentId}\`);
+        const data = await res.json();
+        if (data.status === "approved") {
+          clearInterval(poll);
+          statusEl.textContent = "Payment Approved!";
+          alert("Payment Successful!");
+        } else if (data.status === "rejected") {
+          clearInterval(poll);
+          statusEl.textContent = "Payment Rejected!";
+          alert("Payment Failed!");
+        }
+      }, 5000);
+    }
+
+    loadQR();
+  </script>
+</body>
+</html>

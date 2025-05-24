@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pay with UPI</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 400px; margin: auto; }
+    input, button { width: 100%; padding: 10px; margin: 10px 0; }
+    img { width: 100%; max-width: 300px; margin-top: 10px; }
+    #status { margin-top: 15px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h2>UPI Payment</h2>
+
+  <input type="number" id="amount" placeholder="Enter amount" min="1" required />
+  <button onclick="redirectToPayment()">Generate QR</button>
+
+  <div id="qr-container"></div>
+
+  <div style="margin-top: 20px;">
+    <label>Upload Payment Proof:</label>
+    <input type="file" id="proof" accept="image/*" />
+    <input type="text" id="utr" placeholder="Enter UTR (optional)" />
+    <button onclick="uploadProof()">Upload Proof</button>
+  </div>
+
+  <div id="status"></div>
+
+  <script>
+    let paymentId = null;
+
+    async function redirectToPayment() {
+      const amount = document.getElementById("amount").value;
+      if (!amount) return alert("Please enter amount");
+
+      // Get UPI ID from backend
+      const bankRes = await fetch('/api/admin/bank-details');
+      const bankData = await bankRes.json();
+      const upiId = bankData?.upiId || 'invalid@upi';
+
+      const upiURL = `upi://pay?pa=${upiId}&pn=Merchant&am=${amount}&cu=INR`;
+      const qr = `https://chart.googleapis.com/chart?cht=qr&chs=300x300&chl=${encodeURIComponent(upiURL)}`;
+
+      const qrImg = `<img src="${qr}" alt="QR Code">`;
+      document.getElementById("qr-container").innerHTML = qrImg;
+
+      // Create a new payment entry
+      const res = await fetch('/api/payments/initiate', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ amount, upi: upiId })
+      });
+
+      const data = await res.json();
+      paymentId = data._id;
+    }
+
+    async function uploadProof() {
+      const file = document.getElementById("proof").files[0];
+      const utr = document.getElementById("utr").value;
+
+      if (!file || !paymentId) return alert("Generate QR and select a file first.");
+
+      const formData = new FormData();
+      formData.append("paymentId", paymentId);
+      formData.append("proof", file);
+      formData.append("utr", utr);
+
+      const res = await fetch("/api/payments/upload-proof", {
+        method: "POST",
+        body: formData
+      });
+
+      const data = await res.json();
+      document.getElementById("status").textContent = data.message || "Upload complete";
+    }
+  </script>
+</body>
+</html>

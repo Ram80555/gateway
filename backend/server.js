@@ -21,7 +21,9 @@ app.use(express.static(path.join(__dirname, '../widget')));
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../widget/index.html'));
 });
-
+app.get('/payments', (req, res) => {
+  res.sendFile(path.join(__dirname, '../widget/payments.html'));
+});
 // Endpoint to get UPI ID
 app.get('/get-upi-id', (req, res) => {
   const filePath = path.join(__dirname, 'upi_id.txt');

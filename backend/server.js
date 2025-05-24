@@ -58,5 +58,4 @@ app.listen(PORT, () => {
 
 
 app.use('/api', qrRoutes);
-const qrRoutes = require('./routes/qrRoutes');
 app.use('/', qrRoutes);

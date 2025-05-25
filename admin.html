@@ -2,67 +2,54 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Admin Panel</title>
+  <title>Admin Panel - Local</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
-    th { background-color: #f4f4f4; }
-    img { max-width: 100px; }
-    button { padding: 6px 12px; margin: 2px; }
+    body { font-family: Arial; padding: 30px; text-align: center; }
+    input, button { padding: 10px; margin: 10px; font-size: 16px; }
+    #admin-section { display: none; }
+    #status { color: green; }
   </style>
 </head>
 <body>
-  <h1>Admin Panel</h1>
-  <table id="paymentsTable">
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Amount</th>
-        <th>UPI</th>
-        <th>UTR</th>
-        <th>Proof</th>
-        <th>Status</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+
+  <h2>Admin Login</h2>
+  <input type="password" id="adminPassword" placeholder="Enter Admin Password" />
+  <button onclick="login()">Login</button>
+
+  <div id="admin-section">
+    <h3>Update UPI ID</h3>
+    <input type="text" id="upiInput" placeholder="e.g. user@bank" />
+    <button onclick="updateUpiId()">Save UPI ID</button>
+    <p id="status"></p>
+  </div>
 
   <script>
-    async function loadPayments() {
-      const res = await fetch('/api/admin/payments');
-      const data = await res.json();
-      const tbody = document.querySelector("#paymentsTable tbody");
-      tbody.innerHTML = "";
-      data.forEach(p => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${p.name}</td>
-          <td>${p.amount}</td>
-          <td>${p.upi}</td>
-          <td>${p.utr || "-"}</td>
-          <td>${p.proof ? `<img src="/${p.proof}" />` : "No proof"}</td>
-          <td>${p.status}</td>
-          <td>
-            <button onclick="updateStatus('${p._id}', 'approved')">Approve</button>
-            <button onclick="updateStatus('${p._id}', 'rejected')">Reject</button>
-          </td>`;
-        tbody.appendChild(tr);
-      });
+    const ADMIN_PASSWORD = "admin123";
+
+    function login() {
+      const input = document.getElementById("adminPassword").value;
+      if (input === ADMIN_PASSWORD) {
+        document.getElementById("admin-section").style.display = "block";
+      } else {
+        alert("Incorrect password.");
+      }
     }
 
-    async function updateStatus(id, status) {
-      await fetch("/api/admin/update-status", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, status }),
-      });
-      loadPayments();
+    function updateUpiId() {
+      const upi = document.getElementById("upiInput").value.trim();
+      if (!upi) {
+        alert("UPI ID cannot be empty.");
+        return;
+      }
+      localStorage.setItem("upi_id", upi);
+      document.getElementById("status").innerText = "UPI ID saved!";
     }
 
-    loadPayments();
+    window.onload = () => {
+      const saved = localStorage.getItem("upi_id");
+      if (saved) document.getElementById("upiInput").value = saved;
+    };
   </script>
+
 </body>
 </html>
